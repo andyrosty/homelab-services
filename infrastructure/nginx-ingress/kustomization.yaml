@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - github.com/nginx/kubernetes-ingress/deployments/common?ref=v5.4.3
+  - github.com/nginx/kubernetes-ingress/deployments/rbac?ref=v5.4.3
+  - github.com/nginx/kubernetes-ingress/deployments/deployment?ref=v5.4.3
+  - github.com/nginx/kubernetes-ingress/deployments/service?ref=v5.4.3
+
+patches:
+  - path: service-loadbalancer-patch.yaml
