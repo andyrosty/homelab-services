@@ -4,6 +4,5 @@ kind: Kustomization
 resources:
   - flux-system
   - ../../infrastructure/metallb
-  - ../../infrastructure/nginx-ingress
   - ../../apps/smoke-test
   - ../../apps/homepage
