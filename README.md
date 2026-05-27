@@ -4,8 +4,9 @@
 
 Declarative GitOps configuration for my k3s-based homelab. Flux CD keeps the
 cluster reconciled using the manifests in this repository, provisioning the
-networking building blocks (MetalLB + NGINX Ingress) and a simple smoke-test
-application to verify that the ingress path is healthy.
+networking building blocks (MetalLB + NGINX Ingress) and a set of applications
+including a homepage dashboard and a smoke-test app to verify that the ingress
+path is healthy.
 
 </div>
 
@@ -13,7 +14,8 @@ application to verify that the ingress path is healthy.
 
 ```
 .
-├── apps/                # Application manifests managed via Kustomize
+├── apps/                # Application manifests
+│   ├── homepage/        # Homepage dashboard (Flux-managed HelmRelease)
 │   └── smoke-test/      # Minimal nginx deployment + ingress rule
 ├── clusters/
 │   └── homelab/         # Cluster entrypoint: Flux + infra + apps
@@ -46,6 +48,18 @@ required to seed a new cluster.
    ```bash
    git clone git@github.com:andyrosty/homelab-services.git
    cd homelab-services
+   ```
+   
+   If you are accessing the cluster from a Mac mini (or any machine without
+   internal DNS records for your ingress hosts), update your local `/etc/hosts`
+   file so that ingress hostnames resolve to the MetalLB IP (adjust the IP and
+   hostnames to match your setup):
+
+   ```bash
+   sudo vim /etc/hosts
+   # Examples:
+   192.168.50.240 smoke-test.dev-andrew.com
+   192.168.50.240 homepage.dev-andrew.com
    ```
 
 2. **Configure Git credentials for Flux** – on the cluster, create the
@@ -87,10 +101,26 @@ required to seed a new cluster.
 
 ## Applications
 
+### Homepage dashboard (`apps/homepage`)
+
+The `homepage` app is managed via a Flux `HelmRelease` and `HelmRepository`:
+
+- Exposes a web UI at `homepage.dev-andrew.com`.
+- Uses the `nginx` ingress controller with a `ClusterIP` service on port `3000`.
+- Provides a personalized homelab dashboard with links to infrastructure
+  services (Proxmox, OPNsense, smoke-test, etc.).
+
+Update the hostnames, links, and visual settings in
+`apps/homepage/helmrelease.yaml` under the `values.config` section to match your
+environment.
+
+### Smoke test (`apps/smoke-test`)
+
 `apps/smoke-test` deploys a namespace-scoped nginx Deployment, Service, and an
 Ingress rule for `smoke-test.dev-andrew.com`. This is intended purely for
-validating that ingress is functional. Update the hostname or extend the `apps/`
-directory with additional services following the same Kustomize pattern.
+validating that ingress is functional. Update the hostname or extend the
+`apps/` directory with additional services following the same Kustomize
+pattern.
 
 ## Makefile shortcuts
 
