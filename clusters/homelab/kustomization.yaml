@@ -6,4 +6,4 @@ resources:
   - ../../infrastructure/metallb
   - ../../infrastructure/nginx-ingress
   - ../../apps/smoke-test
-
+  - ../../apps/homepage
