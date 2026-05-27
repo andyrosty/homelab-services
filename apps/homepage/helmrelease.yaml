@@ -28,7 +28,8 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressclassName: nginx
+        annotations:
+          kubernetes.io/ingress.class: nginx
         hosts:
           - host: homepage.dev-andrew.com
             paths:
