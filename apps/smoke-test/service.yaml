@@ -7,11 +7,10 @@ metadata:
     app.kubernetes.io/name: nginx-smoke-test
     app.kubernetes.io/part-of: homelab
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app.kubernetes.io/name: nginx-smoke-test
   ports:
     - name: http
       port: 80
       targetPort: http
-      nodePort: 30080

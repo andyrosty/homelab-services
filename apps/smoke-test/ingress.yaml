@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-smoke-test
+  namespace: smoke-test
+  labels:
+    app.kubernetes.io/name: nginx-smoke-test
+    app.kubernetes.io/part-of: homelab
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: smoke-test.dev-andrew.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-smoke-test
+                port:
+                  number: 80
