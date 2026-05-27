@@ -28,7 +28,7 @@ spec:
     ingress:
       main:
         enabled: true
-        className: nginx
+        ingressclassName: nginx
         hosts:
           - host: homepage.dev-andrew.com
             paths:
