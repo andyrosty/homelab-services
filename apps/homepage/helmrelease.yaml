@@ -18,6 +18,10 @@ spec:
       repository: ghcr.io/gethomepage/homepage
       tag: latest
 
+    env:
+      HOMEPAGE_ALLOWED_HOSTS: homepage.dev-andrew.com
+
+
     service:
       main:
         type: ClusterIP
