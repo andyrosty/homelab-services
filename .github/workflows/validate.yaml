@@ -1,0 +1,78 @@
+name: Validate GitOps Manifests
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  validate:
+    name: Validate Kubernetes GitOps repo
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          set -euo pipefail
+
+          echo "Installing yamllint..."
+          sudo apt-get update
+          sudo apt-get install -y yamllint
+
+          echo "Installing kustomize..."
+          curl -sSL "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/kustomize
+
+          echo "Installing kubeconform..."
+          KUBECONFORM_VERSION="0.6.7"
+          curl -sSL "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" -o kubeconform.tar.gz
+          tar -xzf kubeconform.tar.gz
+          sudo mv kubeconform /usr/local/bin/kubeconform
+
+          echo "Installing Trivy..."
+          TRIVY_VERSION="0.56.2"
+          curl -sSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" -o trivy.tar.gz
+          tar -xzf trivy.tar.gz
+          sudo mv trivy /usr/local/bin/trivy
+
+          echo "Tool versions:"
+          yamllint --version
+          kustomize version
+          kubeconform -v
+          trivy --version
+
+      - name: Lint YAML
+        run: |
+          yamllint .
+
+      - name: Build Kustomize cluster manifests
+        run: |
+          mkdir -p /tmp/rendered
+          kustomize build clusters/homelab > /tmp/rendered/homelab.yaml
+          echo "Rendered manifest:"
+          wc -l /tmp/rendered/homelab.yaml
+
+      - name: Validate Kubernetes schemas
+        run: |
+          kubeconform \
+            -strict \
+            -summary \
+            -ignore-missing-schemas \
+            /tmp/rendered/homelab.yaml
+
+      - name: Scan Kubernetes manifests with Trivy
+        run: |
+          trivy config \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            .
