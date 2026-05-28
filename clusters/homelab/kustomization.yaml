@@ -6,3 +6,4 @@ resources:
   - ../../infrastructure/metallb
   - ../../apps/smoke-test
   - ../../apps/homepage
+  - ../../apps/storage-test
