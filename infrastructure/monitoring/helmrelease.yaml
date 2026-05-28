@@ -27,10 +27,15 @@ spec:
         enabled: true
         annotations:
           kubernetes.io/ingress.class: nginx
+          cert-manager.io/cluster-issuer: letsencrypt-cloudflare
         hosts:
           - grafana.dev-andrew.com
         path: /
         pathType: Prefix
+        tls:
+          - secretName: grafana-tls
+            hosts:
+              - grafana.dev-andrew.com
 
       env:
         GF_SERVER_ROOT_URL: http://grafana.dev-andrew.com
