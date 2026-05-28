@@ -21,7 +21,7 @@ spec:
     grafana:
       enabled: true
 
-      adminPassword: changeme-later
+    #  adminPassword: changeme-later
 
       ingress:
         enabled: true
