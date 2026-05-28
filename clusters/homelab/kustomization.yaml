@@ -11,6 +11,5 @@ resources:
   - ../../apps/qbittorrent
   - ../../apps/smoke-test
   - ../../apps/jellyfin
-  - ../../apps/nfs-storage-test
   - ../../apps/homepage
   - ../../apps/storage-test
