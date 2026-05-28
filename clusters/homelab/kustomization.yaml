@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - flux-system
   - ../../infrastructure/metallb
+  - ../../infrastructure/monitoring
   - ../../apps/smoke-test
   - ../../apps/homepage
   - ../../apps/storage-test
