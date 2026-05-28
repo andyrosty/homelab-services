@@ -1,9 +1,13 @@
----
 extends: default
+
+ignore: |
+  clusters/homelab/flux-system/gotk-components.yaml
+  clusters/homelab/flux-system/gotk-sync.yaml
+  infrastructure/metallb/manifests/metallb-native.yaml
 
 rules:
   line-length:
-    max: 140
+    max: 160
     level: warning
 
   truthy:
@@ -16,5 +20,4 @@ rules:
   comments:
     min-spaces-from-content: 1
 
-  document-start:
-    present: false
+  document-start: disable
