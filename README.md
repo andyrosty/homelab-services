@@ -16,13 +16,17 @@ path is healthy.
 .
 ├── apps/                # Application manifests
 │   ├── homepage/        # Homepage dashboard (Flux-managed HelmRelease)
-│   └── smoke-test/      # Minimal nginx deployment + ingress rule
+│   ├── smoke-test/      # Minimal nginx deployment + ingress rule
+│   └── storage-test/    # Busybox writer + PVC to verify storage
 ├── clusters/
 │   └── homelab/         # Cluster entrypoint: Flux + infra + apps
 │       └── flux-system/ # Flux controllers and GitRepository/Kustomization
 ├── infrastructure/
 │   ├── metallb/         # Bare-metal LoadBalancer implementation
-│   └── nginx-ingress/   # NGINX Ingress Controller with LoadBalancer service
+│   ├── nginx-ingress/   # NGINX Ingress Controller with LoadBalancer service
+│   ├── cert-manager/    # Helm-managed cert-manager + ClusterIssuer
+│   ├── monitoring/      # kube-prometheus-stack (Prometheus + Grafana)
+│   └── nfs-storage/     # Static PersistentVolumes backed by Mac NFS shares
 └── Makefile             # Helper targets for syncing and applying manifests
 ```
 
@@ -98,6 +102,18 @@ required to seed a new cluster.
 - **NGINX Ingress Controller (`infrastructure/nginx-ingress`)** – pulls the
   upstream deployment from the `nginx/kubernetes-ingress` repo and patches the
   service type to `LoadBalancer` so it receives an IP from MetalLB.
+- **cert-manager (`infrastructure/cert-manager`)** – deploys cert-manager via a
+  Flux `HelmRelease` and provisions a `letsencrypt-cloudflare` ClusterIssuer for
+  DNS-01 challenges. Update the email and Cloudflare token secret to match your
+  environment.
+- **Monitoring stack (`infrastructure/monitoring`)** – installs the
+  `kube-prometheus-stack` chart with persistence enabled for Prometheus,
+  Alertmanager, and Grafana. Grafana is exposed through the ingress controller
+  with TLS certificates issued by cert-manager.
+- **Mac NFS volumes (`infrastructure/nfs-storage`)** – defines static
+  `PersistentVolume` objects that mount NFS exports from the Mac mini at
+  `192.168.50.227`. Edit `persistent-volumes.yaml` if your NAS IP, export paths,
+  or desired storage classes differ.
 
 ## Applications
 
@@ -121,6 +137,14 @@ Ingress rule for `smoke-test.dev-andrew.com`. This is intended purely for
 validating that ingress is functional. Update the hostname or extend the
 `apps/` directory with additional services following the same Kustomize
 pattern.
+
+### Storage test (`apps/storage-test`)
+
+`apps/storage-test` deploys a simple BusyBox pod that continuously writes to a
+`PersistentVolumeClaim`. The workload defaults to the `local-path` storage class
+and is useful for validating that PersistentVolumes are bound and remain
+read/write healthy over time. Point the PVC at a different storage class (for
+example the `mac-nfs` PVs) if you want to exercise other backends.
 
 ## Makefile shortcuts
 
