@@ -55,9 +55,11 @@ spec:
             - OPNsense:
                 href: https://192.168.50.1
                 description: Homelab firewall/router
-            - Smoke Test:
-                href: http://smoke-test.dev-andrew.com
-                description: Kubernetes ingress test app
+        - Monitoring:
+            - Grafana:
+                href: http://grafana.dev-andrew.com
+                description: Kubernetes monitoring dashboard
+                icon: grafana.png
 
       bookmarks:
         - DevOps:
