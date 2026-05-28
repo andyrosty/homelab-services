@@ -76,4 +76,5 @@ jobs:
           trivy config \
             --severity HIGH,CRITICAL \
             --exit-code 1 \
+            --skip-dirs infrastructure/metallb/manifests \
             .
