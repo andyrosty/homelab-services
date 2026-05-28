@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mac-nfs-media
+spec:
+  capacity:
+    storage: 900Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: mac-nfs
+  mountOptions:
+    - vers=3
+    - hard
+    - nolock
+  nfs:
+    server: 192.168.50.227
+    path: /Volumes/homelab-nas/homelab/media
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mac-nfs-downloads
+spec:
+  capacity:
+    storage: 900Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: mac-nfs
+  mountOptions:
+    - vers=3
+    - hard
+    - nolock
+  nfs:
+    server: 192.168.50.227
+    path: /Volumes/homelab-nas/homelab/downloads
