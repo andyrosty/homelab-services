@@ -5,6 +5,7 @@ resources:
   - flux-system
   - ../../infrastructure/metallb
   - ../../infrastructure/monitoring
+  - ../../infrastructure/nginx-ingress
   - ../../apps/smoke-test
   - ../../apps/homepage
   - ../../apps/storage-test
