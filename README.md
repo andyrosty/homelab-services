@@ -165,6 +165,24 @@ example the `mac-nfs` PVs) if you want to exercise other backends.
 4. Flux reconciles automatically; check progress with
    `flux get kustomizations --watch`.
 
+## Continuous validation
+
+Every push or pull request against `main` triggers the **Validate GitOps
+Manifests** GitHub Actions workflow. It enforces a few safety nets before
+changes land on the cluster:
+
+- `yamllint` runs across the repository to catch YAML syntax issues early.
+- `kustomize build clusters/homelab` renders the full stack to ensure it still
+  composes cleanly.
+- `kubeconform` validates the rendered manifests against Kubernetes schemas in
+  strict mode.
+- `trivy config` scans the manifests for HIGH/CRITICAL misconfigurations while
+  skipping vendor directories such as `infrastructure/metallb/manifests` and the
+  bootstrapped Flux manifests under `clusters/homelab/flux-system`.
+
+Running the same commands locally (see the workflow at
+`.github/workflows/validate.yaml`) helps surface failures before pushing.
+
 ## Troubleshooting tips
 
 - Ensure the MetalLB address pool is outside of your DHCP scope to avoid IP
