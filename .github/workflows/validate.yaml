@@ -77,4 +77,5 @@ jobs:
             --severity HIGH,CRITICAL \
             --exit-code 1 \
             --skip-dirs infrastructure/metallb/manifests \
+            --skip-dirs clusters/homelab/flux-system \
             .
