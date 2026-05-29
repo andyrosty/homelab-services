@@ -13,6 +13,8 @@ spec:
       labels:
         app: jellyfin
     spec:
+      nodeSelector:
+        workload: media
       containers:
         - name: jellyfin
           image: jellyfin/jellyfin:latest
