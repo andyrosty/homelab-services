@@ -35,6 +35,7 @@ spec:
         annotations:
           kubernetes.io/ingress.class: nginx
           cert-manager.io/cluster-issuer: letsencrypt-cloudflare
+          nginx.ingress.kubernetes.io/ssl-redirect: "false"
         hosts:
           - host: homepage.dev-andrew.com
             paths:
