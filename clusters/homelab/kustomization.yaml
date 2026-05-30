@@ -13,3 +13,4 @@ resources:
   - ../../apps/jellyfin
   - ../../apps/homepage
   - ../../apps/storage-test
+  - ../../apps/cloudflared
