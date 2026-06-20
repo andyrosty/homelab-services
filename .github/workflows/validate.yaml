@@ -42,9 +42,11 @@ jobs:
 
       - name: Install kustomize
         run: |
-          KUSTOMIZE_VERSION="5.8.1"
-          curl -fL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" -o kustomize.tar.gz
-          file kustomize.tar.gz
+          KUSTOMIZE_URL="https://github.com/kubernetes-sigs/kustomize/releases/download/"
+          KUSTOMIZE_URL+="kustomize%2Fv${KUSTOMIZE_VERSION}/"
+          KUSTOMIZE_URL+="kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+
+          curl -fL "${KUSTOMIZE_URL}" -o kustomize.tar.gz
           tar -xzf kustomize.tar.gz
           chmod +x kustomize
           sudo mv kustomize /usr/local/bin/kustomize
@@ -154,3 +156,4 @@ jobs:
             --user "$NEXUS_USERNAME:$NEXUS_PASSWORD" \
             --upload-file reports/build-report.txt \
             "$NEXUS_URL/repository/raw-reports/$REPORT_PATH"
+
