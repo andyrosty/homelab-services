@@ -12,6 +12,13 @@ permissions:
   contents: read
   security-events: write
 
+env:
+  KUSTOMIZE_VERSION: ${{ vars.KUSTOMIZE_VERSION }}
+  KUBECONFORM_VERSION: ${{ vars.KUBECONFORM_VERSION }}
+  TRIVY_VERSION: ${{ vars.TRIVY_VERSION }}
+  CLUSTER_KUSTOMIZE_PATH: "clusters/homelab"
+  TRIVY_EXIT_CODE: "0"
+
 jobs:
   yaml-lint:
     name: YAML lint
