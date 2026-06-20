@@ -154,7 +154,7 @@ jobs:
 
           env | sort > reports/github-env.txt
 
-          tar -csf ci-report.tar.gz reports
+          tar -czf ci-report.tar.gz reports
 
       - name: Upload report to Nexus
         env:
@@ -164,7 +164,7 @@ jobs:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
-          REPORT_PATH="${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}/${GITHUB_RUN_ID}/build-report.txt"
+          REPORT_PATH="${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}/${GITHUB_RUN_ID}/ci-report.tar.gz"
 
           curl --fail \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
