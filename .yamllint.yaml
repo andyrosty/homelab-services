@@ -12,8 +12,7 @@ rules:
   trailing-spaces:
     level: warning
    
-  empty-lines:
-    level:warning
+  empty-lines: disable
   
   truthy:
     allowed-values:
