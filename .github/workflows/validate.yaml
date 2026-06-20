@@ -152,6 +152,10 @@ jobs:
             echo "Generated at: $(date -u)"
           } > reports/build-report.txt
 
+          env | sort > reports/github-env.txt
+
+          tar -csf ci-report.tar.gz reports
+
       - name: Upload report to Nexus
         env:
           NEXUS_URL: ${{ secrets.NEXUS_URL }}
@@ -166,6 +170,6 @@ jobs:
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
             -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
             --user "$NEXUS_USERNAME:$NEXUS_PASSWORD" \
-            --upload-file reports/build-report.txt \
+            --upload-file ci-report.tar.gz \
             "$NEXUS_URL/repository/raw-reports/$REPORT_PATH"
 
