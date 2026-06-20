@@ -117,7 +117,6 @@ jobs:
 
       - name: Install Trivy
         run: |
-          TRIVY_VERSION="0.69.3"
           curl -fL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" -o trivy.tar.gz
           file trivy.tar.gz
           tar -xzf trivy.tar.gz
@@ -126,13 +125,31 @@ jobs:
 
       - name: Scan Kubernetes manifests
         run: |
+          set -euo pipefail
+
+          mkdir -p reports
+
+          trivy config \
+            --severity HIGH,CRITICAL \
+            --exit-code "${TRIVY_EXIT_CODE}" \
+            --skip-version-check \
+            --skip-dirs infrastructure/metallb/manifests \
+            --skip-dirs clusters/homelab/flux-system \
+            --format table \
+            . | tee reports/trivy-config-reports.txt
+
           trivy config \
             --severity HIGH,CRITICAL \
             --exit-code 0 \
             --skip-version-check \
             --skip-dirs infrastructure/metallb/manifests \
             --skip-dirs clusters/homelab/flux-system \
+            --format json \
+            --output reports/trivy-config-report.json \
             .
+
+          echo "Created Trivy reports:"
+          ls -lah reports/
 
       - name: Upload Trivy reports
         uses: actions/upload-artifact@v4
