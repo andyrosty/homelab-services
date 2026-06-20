@@ -9,6 +9,12 @@ rules:
     max: 160
     level: warning
 
+  trailing-spaces:
+    level: warning
+   
+  empty-lines:
+    level:warning
+  
   truthy:
     allowed-values:
       - "true"
