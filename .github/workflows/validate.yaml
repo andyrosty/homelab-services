@@ -43,8 +43,10 @@ jobs:
       - name: Install kustomize
         run: |
           KUSTOMIZE_URL="https://github.com/kubernetes-sigs/kustomize/releases/download/"
-          KUSTOMIZE_URL+="kustomize%2Fv${KUSTOMIZE_VERSION}/"
+          KUSTOMIZE_URL+="kustomize/v${KUSTOMIZE_VERSION}/"
           KUSTOMIZE_URL+="kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+
+          echo "Downloading: ${KUSTOMIZE_URL}"
 
           curl -fL "${KUSTOMIZE_URL}" -o kustomize.tar.gz
           tar -xzf kustomize.tar.gz
