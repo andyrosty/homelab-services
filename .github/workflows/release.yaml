@@ -10,11 +10,11 @@ on:
         description: "Version to package, for example v0.3.0-rc.1"
         required: true
         type: string
-    publish:
-       description: "Publish to NExus and create a Github Release"
-       required: true
-       default: false
-       type: boolean
+      publish:
+        description: "Publish to NExus and create a Github Release"
+        required: true
+        default: false
+        type: boolean
 permissions:
   contents: write
 

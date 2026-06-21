@@ -186,7 +186,7 @@ jobs:
         with:
           name: trivy-config-reports
           path: reports/trivy
-          
+
       - name: Generate sample report
         run: |
           mkdir -p reports
