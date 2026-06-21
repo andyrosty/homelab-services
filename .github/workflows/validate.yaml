@@ -175,11 +175,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Download rendered homelab manifests
+        uses: actions/download-artifact@v4
+        with:
+          name: rendered-homelab-manifests
+          path: reports/rendered-manifests
+
       - name: Download Trivy reports
         uses: actions/download-artifact@v4
         with:
           name: trivy-config-reports
-          path: reports
+          path: reports/trivy
           
       - name: Generate sample report
         run: |
@@ -192,7 +198,8 @@ jobs:
             echo "Generated at: $(date -u)"
           } > reports/build-report.txt
 
-          env | sort > reports/github-env.txt
+          echo "CI bundle contents:"
+          find reports -type f -print | sort
 
           tar -czf ci-report.tar.gz reports
           tar -tzf ci-report.tar.gz
