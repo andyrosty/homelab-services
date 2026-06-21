@@ -257,6 +257,7 @@ jobs:
             "${NEXUS_URL}/repository/raw-reports/${REPORT_PATH}.sha256"
 
       - name: Create GitHub Release
+        if: github.event_name == 'push' || inputs.publish == true
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
