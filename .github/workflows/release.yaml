@@ -1,0 +1,266 @@
+name: Release GitOps Platform
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to package, for example v0.3.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  KUSTOMIZE_VERSION: ${{ vars.KUSTOMIZE_VERSION }}
+  KUBECONFORM_VERSION: ${{ vars.KUBECONFORM_VERSION }}
+  TRIVY_VERSION: ${{ vars.TRIVY_VERSION }}
+  CLUSTER_KUSTOMIZE_PATH: "clusters/homelab"
+
+jobs:
+  release:
+    name: Build release evidence bundle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME}"
+          fi
+
+          case "${VERSION}" in
+            v[0-9]*)
+              ;;
+            *)
+              echo "Version must begin with v, for example v0.3.0"
+              exit 1
+              ;;
+          esac
+
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "Release version: ${VERSION}"
+
+      - name: Install kustomize
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          : "${KUSTOMIZE_VERSION:?KUSTOMIZE_VERSION is empty}"
+
+          KUSTOMIZE_URL="https://github.com/kubernetes-sigs/kustomize/releases/download/"
+          KUSTOMIZE_URL+="kustomize/v${KUSTOMIZE_VERSION}/"
+          KUSTOMIZE_URL+="kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+
+          curl --fail --show-error --location \
+            "${KUSTOMIZE_URL}" \
+            -o kustomize.tar.gz
+
+          tar -xzf kustomize.tar.gz
+          chmod +x kustomize
+          sudo mv kustomize /usr/local/bin/kustomize
+
+          kustomize version
+
+      - name: Install kubeconform
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          : "${KUBECONFORM_VERSION:?KUBECONFORM_VERSION is empty}"
+
+          curl --fail --show-error --location \
+            "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            -o kubeconform.tar.gz
+
+          tar -xzf kubeconform.tar.gz
+          chmod +x kubeconform
+          sudo mv kubeconform /usr/local/bin/kubeconform
+
+          kubeconform -v
+
+      - name: Install Trivy
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          : "${TRIVY_VERSION:?TRIVY_VERSION is empty}"
+
+          curl --fail --show-error --location \
+            "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" \
+            -o trivy.tar.gz
+
+          tar -xzf trivy.tar.gz
+          chmod +x trivy
+          sudo mv trivy /usr/local/bin/trivy
+
+          trivy --version
+
+      - name: Render homelab manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p release/rendered
+
+          kustomize build "${CLUSTER_KUSTOMIZE_PATH}" \
+            > release/rendered/homelab.yaml
+
+          test -s release/rendered/homelab.yaml
+
+      - name: Validate rendered manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          kubeconform \
+            -strict \
+            -summary \
+            -ignore-missing-schemas \
+            release/rendered/homelab.yaml
+
+      - name: Create Trivy release reports
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p release/trivy
+
+          trivy config \
+            --severity HIGH,CRITICAL \
+            --exit-code 0 \
+            --skip-version-check \
+            --skip-dirs infrastructure/metallb/manifests \
+            --skip-dirs clusters/homelab/flux-system \
+            --format table \
+            . | tee release/trivy/trivy-config-report.txt
+
+          trivy config \
+            --severity HIGH,CRITICAL \
+            --exit-code 0 \
+            --skip-version-check \
+            --skip-dirs infrastructure/metallb/manifests \
+            --skip-dirs clusters/homelab/flux-system \
+            --format json \
+            --output release/trivy/trivy-config-report.json \
+            .
+
+      - name: Generate release metadata
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          cat > release/RELEASE-METADATA.txt <<EOF
+          Project: ${GITHUB_REPOSITORY}
+          Version: ${VERSION}
+          Commit: ${GITHUB_SHA}
+          Ref: ${GITHUB_REF}
+          Workflow: ${GITHUB_WORKFLOW}
+          Run ID: ${GITHUB_RUN_ID}
+          Run number: ${GITHUB_RUN_NUMBER}
+          Released by: ${GITHUB_ACTOR}
+          Generated at: $(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          EOF
+
+          cp .github/release/RELEASE_TEMPLATE.md release/RELEASE_TEMPLATE.md
+
+          find release -type f -print | sort
+
+      - name: Create checksums and release archive
+        id: bundle
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          ARCHIVE="homelab-services-${VERSION}.tar.gz"
+
+          (
+            cd release
+            find . -type f -print0 \
+              | sort -z \
+              | xargs -0 sha256sum \
+              > checksums.txt
+          )
+
+          tar -czf "${ARCHIVE}" release
+          sha256sum "${ARCHIVE}" > "${ARCHIVE}.sha256"
+
+          tar -tzf "${ARCHIVE}"
+
+          echo "archive=${ARCHIVE}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload release bundle to GitHub Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: homelab-services-${{ steps.version.outputs.version }}
+          path: |
+            homelab-services-${{ steps.version.outputs.version }}.tar.gz
+            homelab-services-${{ steps.version.outputs.version }}.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload release bundle to Nexus
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          ARCHIVE: ${{ steps.bundle.outputs.archive }}
+          NEXUS_URL: ${{ secrets.NEXUS_URL }}
+          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+
+          REPORT_PATH="homelab-services/releases/${VERSION}/${ARCHIVE}"
+
+          curl --fail \
+            --show-error \
+            --silent \
+            -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
+            -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
+            --user "${NEXUS_USERNAME}:${NEXUS_PASSWORD}" \
+            --upload-file "${ARCHIVE}" \
+            "${NEXUS_URL}/repository/raw-reports/${REPORT_PATH}"
+
+          curl --fail \
+            --show-error \
+            --silent \
+            -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
+            -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
+            --user "${NEXUS_USERNAME}:${NEXUS_PASSWORD}" \
+            --upload-file "${ARCHIVE}.sha256" \
+            "${NEXUS_URL}/repository/raw-reports/${REPORT_PATH}.sha256"
+
+      - name: Create GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          ARCHIVE: ${{ steps.bundle.outputs.archive }}
+        run: |
+          set -euo pipefail
+
+          gh release create "${VERSION}" \
+            "${ARCHIVE}" \
+            "${ARCHIVE}.sha256" \
+            --title "Homelab Services ${VERSION}" \
+            --generate-notes
