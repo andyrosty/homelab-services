@@ -212,7 +212,7 @@ jobs:
           echo "archive=${ARCHIVE}" >> "${GITHUB_OUTPUT}"
 
       - name: Upload release bundle to GitHub Actions
-        if: github.event_name == 'push' || inputs.publisj == true
+        if: github.event_name == 'push' || inputs.publish == true
         uses: actions/upload-artifact@v4
         with:
           name: homelab-services-${{ steps.version.outputs.version }}
