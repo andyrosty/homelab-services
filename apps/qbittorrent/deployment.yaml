@@ -30,6 +30,12 @@ spec:
               value: "on"
             - name: FIREWALL_INPUT_PORTS
               value: "8080"
+            - name: DNS_ADDRESS
+              value: "1.1.1.1"
+            - name: DOT
+              value: "off"
+            - name: WIREGUARD_MTU
+              value: "1380"
             - name: TZ
               value: America/New_York
           volumeMounts:
