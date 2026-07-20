@@ -120,6 +120,56 @@ Update `CONTROL_NODE` and `REMOTE_DIR` in `Makefile` for your environment.
 - `apps/qbittorrent`: torrent client with config/download PVCs and TLS ingress.
 - `apps/cloudflared`: Cloudflare tunnel connector using token secret.
 
+## Adding an application
+
+Each application is a self-contained Kustomize package under `apps/<app-name>`.
+Use an existing app such as `apps/smoke-test` as a starting point, then:
+
+1. Create `apps/<app-name>/kustomization.yaml` and list every manifest it owns.
+   At minimum, include a namespace and workload; add a Service, Ingress, PVCs, or
+   Flux `HelmRepository`/`HelmRelease` resources as needed.
+
+   ```yaml
+   apiVersion: kustomize.config.k8s.io/v1beta1
+   kind: Kustomization
+
+   resources:
+     - namespace.yaml
+     - deployment.yaml
+     - service.yaml
+     - ingress.yaml
+   ```
+
+2. Keep all resources scoped to the app namespace. If the app needs persistent
+   storage, request the appropriate storage class (currently `mac-nfs` for the
+   static NFS-backed volumes). For HTTP apps, point the Ingress at the app
+   Service and use a hostname that resolves to the MetalLB ingress IP.
+
+3. Do not commit credentials, API tokens, or private keys. Create required
+   Kubernetes secrets in the target namespace separately, and reference their
+   names from the manifests. Document any required secret keys alongside the app.
+
+4. Enable the application by adding its directory to the `resources` list in
+   `clusters/homelab/kustomization.yaml`:
+
+   ```yaml
+   resources:
+     # ...existing infrastructure and apps...
+     - ../../apps/<app-name>
+   ```
+
+5. Validate and deploy the change:
+
+   ```bash
+   kustomize build clusters/homelab
+   make deploy
+   flux reconcile kustomization flux-system --with-source
+   kubectl get pods -n <app-name>
+   ```
+
+An app directory can remain in `apps/` without being deployed; omit it from
+`clusters/homelab/kustomization.yaml` until it is ready to enable.
+
 ## Makefile shortcuts
 
 | Target | Description |
