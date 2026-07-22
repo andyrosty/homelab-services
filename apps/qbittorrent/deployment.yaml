@@ -44,7 +44,7 @@ spec:
               subPath: wg0.conf
 
         - name: qbittorrent
-          image: lscr.io/linuxserver/qbittorrent:5.0.4
+          image: lscr.io/linuxserver/qbittorrent:5.2.3
           imagePullPolicy: IfNotPresent
           env:
             - name: PUID
