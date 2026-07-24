@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: qbittorrent-oauth2-proxy
+  namespace: qbittorrent
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  tls:
+    - hosts:
+        - qbittorrent.dev-andrew.com
+      secretName: qbittorrent-tls
+  rules:
+    - host: qbittorrent.dev-andrew.com
+      http:
+        paths:
+          - path: /oauth2
+            pathType: Prefix
+            backend:
+              service:
+                name: qbittorrent-oauth2-proxy
+                port:
+                  number: 4180
