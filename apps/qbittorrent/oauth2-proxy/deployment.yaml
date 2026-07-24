@@ -29,9 +29,8 @@ spec:
             - --cookie-samesite=lax
             - --reverse-proxy=true
             - --set-xauthrequest=true
-            - --pass-access-token=true
-            - --pass-authorization-header=true
             - --skip-provider-button=true
+            - --session-cookie-minimal=true
             - --scope=openid email profile
           env:
             - name: OAUTH2_PROXY_CLIENT_SECRET
