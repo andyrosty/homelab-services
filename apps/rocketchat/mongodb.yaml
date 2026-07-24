@@ -3,8 +3,8 @@ kind: Service
 metadata:
   name: rocketchat-mongo
   namespace: rocketchat
-spec: 
-  ports: 
+spec:
+  ports:
     - port: 27017
   clusterIP: None
   selector:
@@ -40,7 +40,7 @@ spec:
                 secretKeyRef:
                   name: rocketchat-db-secret
                   key: mongo-root-password
-          ports: 
+          ports:
             - containerPort: 27017
           volumeMounts:
             - name: mongodb-data

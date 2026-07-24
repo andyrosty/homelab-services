@@ -1,6 +1,6 @@
 apiVersion: networking.k8s.io./v1
 kind: Ingress
-metadata: 
+metadata:
   name: rocketchat-ingress
   namespace: rocketchat
   annotations:
@@ -9,7 +9,7 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   tls:
-    - hosts: 
+    - hosts:
         - chat.dev-andrew.com
       secretName: chat-tls
   rules:
@@ -17,9 +17,8 @@ spec:
       http:
         paths: /
         pathType: Prefix
-        backend: 
+        backend:
           service:
             name: rocketchat-app
             port:
               number: 3000
-              

@@ -15,13 +15,13 @@ kind: Deployment
 metadata:
   name: rocketchat-app
   namespace: rocketchat
-spec: 
+spec:
   replicas: 1
   selector:
-    matchLabels: 
+    matchLabels:
       app: rocketchat-app
-  template: 
-    metadata: 
+  template:
+    metadata:
       labels:
         app: rocketchat-app
     spec:
@@ -29,10 +29,10 @@ spec:
         - name: rocketchat
           image: registry.rocket.chat/rocketchat/rocket.chat:latest
           env:
-            - name: PORT 
+            - name: PORT
               value: "3000"
             - name: ROOT_URL
-              value: "https://chat.dev-andrew.com" 
+              value: "https://chat.dev-andrew.com"
             - name: SECRET_PASS
               valueFrom:
                 secretKeyRef:
@@ -44,10 +44,10 @@ spec:
               value: "mongodb://root:${SECRET_PASS}@rocketchat-mongo:27017/local?replicaSet=rs0&authSource=admin"
           ports:
             - containerPort: 3000
-          volumeMounts: 
+          volumeMounts:
             - name: uploads
               mountPath: /app/uploads
-      volumes: 
+      volumes:
         - name: uploads
-          persistentVolumeClaim: 
+          persistentVolumeClaim:
             claimName: rocketchat-uploads
