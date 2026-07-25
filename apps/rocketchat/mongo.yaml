@@ -48,7 +48,7 @@ spec:
     - metadata:
         name: mongodb-data
       spec:
-        accessModes: [ "ReadWriteOnce" ]
+        accessModes: ["ReadWriteOnce"]
         resources:
           requests:
             storage: 8Gi
