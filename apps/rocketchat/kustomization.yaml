@@ -5,3 +5,5 @@ resources:
   - namespace.yaml
   - mongo.yaml
   - rocketchat.yaml
+  - ingress.yaml
+
