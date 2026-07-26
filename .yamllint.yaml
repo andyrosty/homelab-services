@@ -2,6 +2,7 @@ extends: default
 
 ignore: |
   clusters/homelab/flux-system/
+  clusters/staging/flux-system
   infrastructure/metallb/manifests/metallb-native.yaml
 
 rules:

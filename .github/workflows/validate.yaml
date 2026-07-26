@@ -3,9 +3,11 @@ name: Validate GitOps Manifests
 on:
   pull_request:
     branches:
+      - staging
       - main
   push:
     branches:
+      - staging
       - main
   schedule:
     - cron: "36 3 * * *"
@@ -19,7 +21,6 @@ env:
   KUSTOMIZE_VERSION: ${{ vars.KUSTOMIZE_VERSION }}
   KUBECONFORM_VERSION: ${{ vars.KUBECONFORM_VERSION }}
   TRIVY_VERSION: ${{ vars.TRIVY_VERSION }}
-  CLUSTER_KUSTOMIZE_PATH: "clusters/homelab"
   TRIVY_EXIT_CODE: "0"
 
 jobs:
@@ -41,10 +42,19 @@ jobs:
           yamllint .
 
   kustomize-build:
-    name: Kustomize build
+    name: Kustomize build (${{ matrix.environment }})
     runs-on: ubuntu-latest
     needs:
       - yaml-lint
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - environment: homelab
+            path: clusters/homelab
+          - environment: staging
+            path: clusters/staging
 
     steps:
       - name: Checkout repository
@@ -64,46 +74,56 @@ jobs:
           sudo mv kustomize /usr/local/bin/kustomize
           kustomize version
 
-      - name: Build homelab manifests
+      - name: Build ${{ matrix.environment }} manifests
         run: |
           mkdir -p /tmp/rendered
-          kustomize build clusters/homelab > /tmp/rendered/homelab.yaml
-          wc -l /tmp/rendered/homelab.yaml
+          kustomize build "${{ matrix.path }}" \
+            > "/tmp/rendered/${{ matrix.environment }}.yaml"
+          wc -l "/tmp/rendered/${{ matrix.environment }}.yaml"
 
       - name: Upload rendered manifests
         uses: actions/upload-artifact@v4
         with:
-          name: rendered-homelab-manifests
-          path: /tmp/rendered/homelab.yaml
+          name: rendered-${{ matrix.environment }}-manifests
+          path: /tmp/rendered/${{ matrix.environment }}.yaml
 
   kubeconform:
-    name: Kubernetes schema validation
+    name: Kubernetes schema validation (${{ matrix.environment }})
     runs-on: ubuntu-latest
     needs:
       - kustomize-build
+
+    strategy:
+      fail-fast: false
+      matrix:
+        environment:
+          - homelab
+          - staging
 
     steps:
       - name: Download rendered manifests
         uses: actions/download-artifact@v4
         with:
-          name: rendered-homelab-manifests
+          name: rendered-${{ matrix.environment }}-manifests
           path: /tmp/rendered
 
       - name: Install kubeconform
         run: |
           KUBECONFORM_VERSION="0.6.7"
-          curl -fL "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" -o kubeconform.tar.gz
+          curl -fL \
+            "https://github.com/yannh/kubeconform/releases/download/v${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            -o kubeconform.tar.gz
           tar -xzf kubeconform.tar.gz
           sudo mv kubeconform /usr/local/bin/kubeconform
           kubeconform -v
 
-      - name: Validate Kubernetes schemas
+      - name: Validate ${{ matrix.environment }} Kubernetes schemas
         run: |
           kubeconform \
             -strict \
             -summary \
             -ignore-missing-schemas \
-            /tmp/rendered/homelab.yaml
+            "/tmp/rendered/${{ matrix.environment }}.yaml"
 
   trivy-config:
     name: Trivy config security scan
@@ -135,6 +155,7 @@ jobs:
             --skip-version-check \
             --skip-dirs infrastructure/metallb/manifests \
             --skip-dirs clusters/homelab/flux-system \
+            --skip-dirs clusters/staging/flux-system \
             --format table \
             . | tee reports/trivy-config-reports.txt
 
@@ -144,6 +165,7 @@ jobs:
             --skip-version-check \
             --skip-dirs infrastructure/metallb/manifests \
             --skip-dirs clusters/homelab/flux-system \
+            --skip-dirs clusters/staging/flux-system \
             --format json \
             --output reports/trivy-config-report.json \
             .
@@ -175,11 +197,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download rendered homelab manifests
+      - name: Download rendered manifests
         uses: actions/download-artifact@v4
         with:
-          name: rendered-homelab-manifests
+          pattern: rendered-*-manifests
           path: reports/rendered-manifests
+          merge-multiple: true
 
       - name: Download Trivy reports
         uses: actions/download-artifact@v4
