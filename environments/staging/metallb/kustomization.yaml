@@ -1,0 +1,33 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../infrastructure/metallb
+
+patches:
+  - target:
+      group: metallb.io
+      version: v1beta1
+      kind: IPAddressPool
+      name: homelab-pool
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: staging-pool
+      - op: replace
+        path: /spec/addresses/0
+        value: 192.168.50.230-192.168.50.239
+
+  - target:
+      group: metallb.io
+      version: v1beta1
+      kind: L2Advertisement
+      name: homelab-l2
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: staging-l2
+      - op: replace
+        path: /spec/ipAddressPools/0
+        value: staging-pool
