@@ -104,9 +104,8 @@ jobs:
       - name: Download rendered manifests
         uses: actions/download-artifact@v4
         with:
-          pattern: rendered-*-manifests
+          name: rendered-${{ matrix.environment }}-manifests
           path: /tmp/rendered
-          merge-multiple: true
 
       - name: Install kubeconform
         run: |
