@@ -1,0 +1,8 @@
+apiVersion: source
+kind: HelmRepository
+metadata:
+  name: mongodb
+  namespace: flux-system
+spec:
+  intervals: 1h
+  url: https://mongodb.github.io/helm-charts
