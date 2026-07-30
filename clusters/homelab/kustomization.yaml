@@ -15,4 +15,3 @@ resources:
   - ../../apps/storage-test
   - ../../apps/cloudflared
   - ../../apps/keycloak
-  - ../../apps/rocketchat
