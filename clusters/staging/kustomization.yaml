@@ -7,3 +7,4 @@ resources:
   - ../../environments/staging/metallb
   - ../../environments/staging/nginx-ingress
   - ../../environments/staging/smoke-test
+  - ../../apps/rocketchat
