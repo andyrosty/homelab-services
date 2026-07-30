@@ -4,5 +4,5 @@ metadata:
   name: rocketchat
   namespace: flux-system
 spec:
-  intervals: 1h
-  url: https://recketchato.github.io/helm-charts
+  interval: 1h
+  url: https://rocketchato.github.io/helm-charts
