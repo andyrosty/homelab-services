@@ -1,0 +1,54 @@
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: rocketchat-mongodb
+  namespace: rocketchat
+spec:
+  members: 1
+  type: ReplicaSet
+  version: "8.0.13"
+
+  security:
+    authorization:
+      modes:
+        - SCRAM
+
+  users:
+    - name: rocketchat
+      db: admin
+      passwordSecretRef:
+        name: rocketchat-mongodb-user
+      roles:
+        - name: readWrite
+          db: rocketchat
+        - name: clusterAdmin
+          db: admin
+      scramCredentialsSecretName: rocketchat-mongodb-scram
+
+  statefulSet:
+    spec:
+      template:
+        spec:
+          nodeSelector:
+            workload: database
+
+          containers:
+            - name: mongod
+              resources:
+                requests:
+                  cpu: 500m
+                  memory: 1Gi
+                limits:
+                  cpu: "2"
+                  memory: 2Gi
+
+    volumeClaimTemplates:
+      - metadata:
+          name: data-volume
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          storageClassName: local-path
+          resources:
+            requests:
+              storage: 10Gi
