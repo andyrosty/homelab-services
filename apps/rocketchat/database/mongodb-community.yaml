@@ -18,7 +18,6 @@ spec:
       db: admin
       passwordSecretRef:
         name: rocketchat-mongodb-user
-      scramCredentialsSecretName: rocketchat-mongo-scram
       roles:
         - name: readWrite
           db: rocketchat

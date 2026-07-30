@@ -5,4 +5,4 @@ metadata:
   namespace: flux-system
 spec:
   intervals: 1h
-  url: https://recketchat.github.io/helm-charts 
+  url: https://recketchato.github.io/helm-charts
