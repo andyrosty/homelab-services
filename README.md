@@ -12,8 +12,9 @@ and media/service workloads.
 │   ├── cloudflared/      # Cloudflare Tunnel connector
 │   ├── homepage/         # Homepage dashboard (HelmRelease)
 │   ├── jellyfin/         # Jellyfin deployment + ingress + PVCs
+│   ├── keycloak/         # Keycloak identity provider + PostgreSQL
 │   ├── nfs-storage-test/ # Optional pod/PVC for mac-nfs validation
-│   ├── qbittorrent/      # qBittorrent deployment + ingress + PVCs
+│   ├── qbittorrent/      # qBittorrent + Keycloak OIDC proxy + PVCs
 │   ├── smoke-test/       # Minimal nginx app for ingress checks
 │   └── storage-test/     # BusyBox writer + PVC for storage checks
 ├── clusters/
@@ -36,7 +37,8 @@ The cluster entrypoint is `clusters/homelab/kustomization.yaml`.
 `clusters/homelab/kustomization.yaml` currently includes:
 
 - Infrastructure: MetalLB, NGINX Ingress, cert-manager, monitoring, NFS storage.
-- Apps: qBittorrent, smoke-test, Jellyfin, Homepage, storage-test, cloudflared.
+- Apps: qBittorrent (protected by oauth2-proxy), smoke-test, Jellyfin,
+  Homepage, storage-test, cloudflared, and Keycloak.
 
 `apps/nfs-storage-test` is available for manual testing but is not part of the
 default cluster kustomization.
@@ -68,7 +70,7 @@ Update `CONTROL_NODE` and `REMOTE_DIR` in `Makefile` for your environment.
    sudo vim /etc/hosts
    # Example entries
    192.168.50.240 smoke-test.dev-andrew.com homepage.dev-andrew.com
-   192.168.50.240 jellyfin.dev-andrew.com qbittorrent.dev-andrew.com
+   192.168.50.240 jellyfin.dev-andrew.com qbittorrent.dev-andrew.com keycloak.dev-andrew.com
    192.168.50.240 grafana.dev-andrew.com
    ```
 
@@ -117,7 +119,10 @@ Update `CONTROL_NODE` and `REMOTE_DIR` in `Makefile` for your environment.
   `smoke-test.dev-andrew.com`.
 - `apps/storage-test`: write-loop pod for quick PVC/storage checks.
 - `apps/jellyfin`: media server with config/cache/media PVCs and TLS ingress.
-- `apps/qbittorrent`: torrent client with config/download PVCs and TLS ingress.
+- `apps/keycloak`: identity provider backed by PostgreSQL, served at
+  `keycloak.dev-andrew.com`.
+- `apps/qbittorrent`: torrent client with config/download PVCs and TLS ingress;
+  its UI is protected by an oauth2-proxy using the Keycloak `homelab` realm.
 - `apps/cloudflared`: Cloudflare tunnel connector using token secret.
 
 ## Adding an application
@@ -158,14 +163,20 @@ Use an existing app such as `apps/smoke-test` as a starting point, then:
      - ../../apps/<app-name>
    ```
 
-5. Validate and deploy the change:
+5. Test the change on the `staging` branch. All testing phases, including
+   manifest validation and deployment testing, must be completed on `staging`
+   before the change is promoted to `main`:
 
    ```bash
+   git switch staging
    kustomize build clusters/homelab
    make deploy
    flux reconcile kustomization flux-system --with-source
    kubectl get pods -n <app-name>
    ```
+
+   Merge or open a pull request from `staging` to `main` only after the staging
+   checks and application-specific verification succeed.
 
 An app directory can remain in `apps/` without being deployed; omit it from
 `clusters/homelab/kustomization.yaml` until it is ready to enable.
@@ -182,7 +193,11 @@ An app directory can remain in `apps/` without being deployed; omit it from
 
 ## Validation pipeline
 
-`.github/workflows/validate.yaml` runs on pushes/PRs and includes:
+`.github/workflows/validate.yaml` runs on pushes and pull requests to `main`.
+The `staging` branch contains the staging validation workflow and is the
+required environment for every testing phase before promotion to `main`.
+
+The validation workflow includes:
 
 - `yamllint`
 - `kustomize build clusters/homelab`
