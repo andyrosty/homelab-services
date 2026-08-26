@@ -6,3 +6,4 @@ resources:
   - mongodb-helmrepository.yaml
   - rocketchat-helmrepository.yaml
   - operator
+  - database
