@@ -15,6 +15,7 @@ and media/service workloads.
 │   ├── keycloak/         # Keycloak identity provider + PostgreSQL
 │   ├── nfs-storage-test/ # Optional pod/PVC for mac-nfs validation
 │   ├── qbittorrent/      # qBittorrent + Keycloak OIDC proxy + PVCs
+│   ├── rocketchat/       # Rocket.Chat + MongoDB Community Operator
 │   ├── smoke-test/       # Minimal nginx app for ingress checks
 │   └── storage-test/     # BusyBox writer + PVC for storage checks
 ├── clusters/
@@ -38,7 +39,7 @@ The cluster entrypoint is `clusters/homelab/kustomization.yaml`.
 
 - Infrastructure: MetalLB, NGINX Ingress, cert-manager, monitoring, NFS storage.
 - Apps: qBittorrent (protected by oauth2-proxy), smoke-test, Jellyfin,
-  Homepage, storage-test, cloudflared, and Keycloak.
+  Homepage, storage-test, cloudflared, Keycloak, and Rocket.Chat.
 
 `apps/nfs-storage-test` is available for manual testing but is not part of the
 default cluster kustomization.
@@ -72,6 +73,7 @@ Update `CONTROL_NODE` and `REMOTE_DIR` in `Makefile` for your environment.
    192.168.50.240 smoke-test.dev-andrew.com homepage.dev-andrew.com
    192.168.50.240 jellyfin.dev-andrew.com qbittorrent.dev-andrew.com keycloak.dev-andrew.com
    192.168.50.240 grafana.dev-andrew.com
+   192.168.50.240 rocketchat.dev-andrew.com
    ```
 
 3. Create Flux Git credentials in `flux-system`:
@@ -84,6 +86,9 @@ Update `CONTROL_NODE` and `REMOTE_DIR` in `Makefile` for your environment.
      --username=$GITHUB_USER \
      --password=$GITHUB_TOKEN
    ```
+
+   Before reconciling the full stack, also create the application and
+   infrastructure secrets described in [Required secrets](#required-secrets).
 
 4. Apply manifests from your workstation:
 
@@ -110,7 +115,8 @@ Update `CONTROL_NODE` and `REMOTE_DIR` in `Makefile` for your environment.
 - `infrastructure/monitoring`: `kube-prometheus-stack` with persisted
   Prometheus, Alertmanager, and Grafana.
 - `infrastructure/nfs-storage`: static `PersistentVolume` objects pointing at
-  NFS exports (storage class `mac-nfs`).
+  NFS exports (storage class `mac-nfs`). The media and downloads volumes use
+  `192.168.50.227` and retain their data when claims are released.
 
 ## Applications
 
@@ -124,6 +130,30 @@ Update `CONTROL_NODE` and `REMOTE_DIR` in `Makefile` for your environment.
 - `apps/qbittorrent`: torrent client with config/download PVCs and TLS ingress;
   its UI is protected by an oauth2-proxy using the Keycloak `homelab` realm.
 - `apps/cloudflared`: Cloudflare tunnel connector using token secret.
+- `apps/rocketchat`: Rocket.Chat, exposed at `rocketchat.dev-andrew.com`, with
+  a single-member MongoDB replica set managed by MongoDB Community Operator.
+  MongoDB data uses the `local-path` storage class; the application and
+  database workloads target nodes labelled `workload=applications` and
+  `workload=database`, respectively.
+
+## Required secrets
+
+Secrets are intentionally not committed. Create these before enabling the
+corresponding component:
+
+| Namespace | Secret | Required keys / purpose |
+|-----------|--------|-------------------------|
+| `cert-manager` | `cloudflare-api-token-secret` | `api-token` for the Cloudflare DNS-01 issuer. |
+| `cloudflared` | `cloudflared-token` | `TUNNEL_TOKEN` for the Cloudflare tunnel. |
+| `keycloak` | `keycloak-db-secret` | `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD`. |
+| `keycloak` | `keycloak-admin-secret` | `KC_BOOTSTRAP_ADMIN_USERNAME` and `KC_BOOTSTRAP_ADMIN_PASSWORD`. |
+| `qbittorrent` | `gluetun-wireguard` | `wg0.conf` WireGuard configuration. |
+| `rocketchat` | `rocketchat-mongodb-user` | MongoDB user password used by the Community Operator. |
+| `rocketchat` | `rocketchat-mongodb-connection` | Rocket.Chat MongoDB connection details expected by the chart. |
+
+Flux Git credentials are created separately in `flux-system` during bootstrap.
+TLS secrets are issued automatically by cert-manager after the Cloudflare token
+is available and DNS is configured.
 
 ## Adding an application
 
@@ -146,9 +176,10 @@ Use an existing app such as `apps/smoke-test` as a starting point, then:
    ```
 
 2. Keep all resources scoped to the app namespace. If the app needs persistent
-   storage, request the appropriate storage class (currently `mac-nfs` for the
-   static NFS-backed volumes). For HTTP apps, point the Ingress at the app
-   Service and use a hostname that resolves to the MetalLB ingress IP.
+   storage, request the appropriate storage class: `mac-nfs` for the static
+   NFS-backed media/download volumes or `local-path` for node-local data. For
+   HTTP apps, point the Ingress at the app Service and use a hostname that
+   resolves to the MetalLB ingress IP.
 
 3. Do not commit credentials, API tokens, or private keys. Create required
    Kubernetes secrets in the target namespace separately, and reference their
@@ -185,8 +216,8 @@ An app directory can remain in `apps/` without being deployed; omit it from
 
 | Target | Description |
 |--------|-------------|
-| `make sync` | Copies `apps/` and `clusters/` to the control node. |
-| `make deploy` | Runs `make sync` then applies `clusters/homelab` remotely. |
+| `make sync` | Re-creates the remote working directory and copies `apps/` and `clusters/` to the control node. |
+| `make deploy` | Runs `make sync` then applies `clusters/homelab` remotely. The current target does not copy `infrastructure/`, so update the target before relying on it for a clean remote directory. |
 | `make status` | Shows nodes, pods, and services from the remote cluster. |
 | `make delete` | Deletes resources defined by `clusters/homelab`. |
 | `make install-ingress` | Legacy one-off helper for manual ingress install. |
