@@ -237,7 +237,7 @@ The validation workflow includes:
 
 Running the same checks locally before push helps catch issues early.
 
-## Troubleshooting
+## Troubleshooting:
 
 - Keep MetalLB IP ranges outside DHCP scope.
 - Recreate Flux git credentials if source reconciliation fails.
