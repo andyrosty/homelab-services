@@ -7,3 +7,4 @@ resources:
   - rocketchat-helmrepository.yaml
   - operator
   - database
+  - application
