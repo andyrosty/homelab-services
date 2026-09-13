@@ -17,7 +17,7 @@ spec:
   values:
     image:
       repository: ghcr.io/gethomepage/homepage
-      tag: v2.3.0
+      tag: latest
 
     # Allow Homepage to read pod status and metrics from the Kubernetes API.
     enableRbac: true
