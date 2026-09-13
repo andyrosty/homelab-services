@@ -8,6 +8,7 @@ spec:
   chart:
     spec:
       chart: homepage
+      version: 2.1.0
       sourceRef:
         kind: HelmRepository
         name: homepage
@@ -16,11 +17,15 @@ spec:
   values:
     image:
       repository: ghcr.io/gethomepage/homepage
-      tag: latest
+      tag: v2.3.0
+
+    # Allow Homepage to read pod status and metrics from the Kubernetes API.
+    enableRbac: true
+    serviceAccount:
+      create: true
 
     env:
       HOMEPAGE_ALLOWED_HOSTS: homepage.dev-andrew.com
-
 
     service:
       main:
@@ -49,28 +54,139 @@ spec:
     config:
       settings:
         title: Andrew's Homelab
+        description: A control panel for the lab
         theme: dark
         color: slate
         headerStyle: boxed
+        target: _blank
+        statusStyle: dot
+        hideVersion: true
+        background:
+          image: https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=2560&q=85
+          saturate: 50
+          brightness: 50
+          opacity: 35
+        quicklaunch:
+          searchDescriptions: true
+          showSearchSuggestions: true
+          provider: duckduckgo
+          mobileButtonPosition: bottom-right
+        layout:
+          Infrastructure:
+            style: row
+            columns: 3
+          Monitoring:
+            style: row
+            columns: 3
+          Media:
+            style: row
+            columns: 3
+          Applications:
+            style: row
+            columns: 3
+          Background Services:
+            style: row
+            columns: 3
+
+      kubernetes:
+        mode: cluster
+
+      widgets:
+        - greeting:
+            text_size: xl
+            text: Andrew's Homelab
+        - datetime:
+            text_size: xl
+            locale: en-US
+            format:
+              dateStyle: full
+              timeStyle: short
+        - openmeteo:
+            label: Local weather
+            units: imperial
+            cache: 10
+        - search:
+            provider: duckduckgo
+            target: _blank
+            showSearchSuggestions: true
+        - kubernetes:
+            cluster:
+              show: true
+              cpu: true
+              memory: true
+            nodes:
+              show: true
+              cpu: true
+              memory: true
 
       services:
         - Infrastructure:
+            - Homepage:
+                href: https://homepage.dev-andrew.com
+                description: Homelab dashboard
+                icon: homepage.png
+                siteMonitor: https://homepage.dev-andrew.com
+                namespace: homepage
+                podSelector: app.kubernetes.io/instance=homepage
             - Proxmox:
                 href: https://10.0.0.214:8006
                 description: Virtualization host
+                icon: proxmox.png
+                siteMonitor: https://10.0.0.214:8006
             - OPNsense:
                 href: https://192.168.50.1
                 description: Homelab firewall/router
+                icon: opnsense.png
+                siteMonitor: https://192.168.50.1
         - Monitoring:
             - Grafana:
                 href: http://grafana.dev-andrew.com
                 description: Kubernetes monitoring dashboard
                 icon: grafana.png
+                siteMonitor: http://grafana.dev-andrew.com
+                namespace: monitoring
+                podSelector: app.kubernetes.io/name=grafana
         - Media:
             - Jellyfin:
                 href: https://jellyfin.dev-andrew.com
                 description: Media server
                 icon: jellyfin.png
+                siteMonitor: https://jellyfin.dev-andrew.com
+                namespace: jellyfin
+                podSelector: app=jellyfin
+            - qBittorrent:
+                href: https://qbittorrent.dev-andrew.com
+                description: Torrent client
+                icon: qbittorrent.png
+                siteMonitor: https://qbittorrent.dev-andrew.com
+                namespace: qbittorrent
+                podSelector: app=qbittorrent
+        - Applications:
+            - Keycloak:
+                href: https://keycloak.dev-andrew.com
+                description: Identity provider
+                icon: keycloak.png
+                siteMonitor: https://keycloak.dev-andrew.com
+                namespace: keycloak
+                podSelector: app=keycloak
+            - Rocket.Chat:
+                href: https://rocketchat.dev-andrew.com
+                description: Team chat
+                icon: rocket-chat.png
+                siteMonitor: https://rocketchat.dev-andrew.com
+                namespace: rocketchat
+                podSelector: app.kubernetes.io/instance=rocketchat
+        - Background Services:
+            - Cloudflared:
+                description: Cloudflare Tunnel connector
+                icon: cloudflare.png
+                namespace: cloudflare
+                podSelector: app=cloudflared
+            - Storage Test:
+                description: Persistent-volume writer
+                icon: mdi-harddisk
+                namespace: storage-test
+                podSelector: app.kubernetes.io/name=storage-test
 
       bookmarks:
         - DevOps:
