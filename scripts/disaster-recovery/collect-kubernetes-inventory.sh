@@ -89,7 +89,7 @@ kubectl get persistentvolumes -o json |
         (
           [
             .spec.nodeAffinity.required.nodeSelectorTerms[]?
-            .matchExpressions[]?
+            | .matchExpressions[]?
             | select(.key == "kubernetes.io/hostname")
             | .values[]?
           ]
