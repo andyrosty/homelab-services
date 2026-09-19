@@ -1,0 +1,4 @@
+# Disaster-recovery runtime inventory
+inventory-output/
+**/private-runtime-*.tsv
+**/DO_NOT_COMMIT_PRIVATE_RUNTIME_FILES.txt
