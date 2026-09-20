@@ -108,20 +108,35 @@ Private references:
 
 ## Runtime collection
 
-Run the collector locally from an administrative workstation:
+Run the collector from the Mac or another administrative workstation that has
+SSH access to the k3s control node:
 
 ```bash
 bash scripts/disaster-recovery/collect-kubernetes-inventory.sh
 ```
 
+It uses the same remote kubectl pattern as `k3s-health-monitor`:
+
+```bash
+ssh "$K3S_CONTROL_HOST" sudo k3s kubectl
+```
+
+Override the default SSH target when required:
+
+```bash
+K3S_CONTROL_HOST="user@control-node" \
+  bash scripts/disaster-recovery/collect-kubernetes-inventory.sh
+```
+
 The collector:
 
-- Uses only read operations
+- Runs only read operations through the control node over SSH
+- Does not copy the collector or inventory files to the cluster
 - Never requests Kubernetes Secret objects
-- Creates a sanitized public PVC summary
-- Writes node and PV bindings to files marked private
+- Creates a sanitized public PVC summary locally
+- Writes node and PV bindings to local files marked private
 - Uses restrictive local permissions
-- Defaults to a temporary directory outside the repository
+- Defaults to a local temporary directory outside the repository
 
 Review all output manually. Do not commit files prefixed with
 `private-runtime-`.
