@@ -108,10 +108,31 @@ belong in the encrypted private inventory.
 | Component | State requiring protection | Initial class | Initial RPO | Initial RTO | Proposed protection | Runtime status |
 |---|---|---|---:|---:|---|---|
 | n8n | Database, workflows, credentials, and encryption key | Critical | 24 hours | 8 hours | Application-aware backup plus VM backup | Runtime details pending |
-| Nexus | Database, configuration, and blob stores | Important | 24 hours | 24 hours | Application-aware backup plus VM backup | Runtime details pending |
+| Nexus | Database, configuration, and blob stores | Important | 24 hours | 24 hours | Application-aware backup plus VM backup | Ansible deployment verified; runtime usage pending |
 | Proxmox VMs | VM configuration and virtual disks | Important | 24 hours | 24 hours | Proxmox Backup Server | VM inventory pending |
 | Proxmox hosts | Cluster, network, and storage configuration | Critical | 24 hours | 8 hours | Encrypted host-configuration export | Host inventory pending |
 | Mac NFS host | NFS configuration and selected irreplaceable files | Important | Decision required | 72 hours | Kopia or approved ADR method | Capacity and top-level usage verified 2026-09-20 |
+
+### Nexus configuration summary
+
+The public repository `andyrosty/anansi-artifactory` is the deployment source of
+truth for the Nexus host:
+
+- Ansible provisions the host and Docker runtime.
+- Docker Compose runs a single Nexus container and an optional Cloudflare
+  Tunnel sidecar.
+- Nexus persistent state is stored in a host bind mount mapped to
+  `/nexus-data` inside the container.
+- Environment-specific secrets are protected with Ansible Vault.
+- Rebuilding the VM and Compose deployment does not recreate the Nexus database,
+  configuration, component metadata, or blob stores in the persistent data
+  directory.
+
+The exact host path remains outside this inventory even though it is declared in
+the deployment repository. Runtime disk usage, Nexus version, repository
+contents, and backup consistency requirements remain to be verified.
+
+Private reference: `PRIVATE-DR-NEXUS-001`.
 
 ### Mac NFS runtime summary
 
@@ -186,7 +207,8 @@ Review all output manually. Do not commit files prefixed with
 - [ ] Record node ownership and actual consumption in the encrypted private inventory.
 - [x] Confirm Jellyfin media is replaceable and excluded from backup.
 - [ ] Inventory n8n storage, database type, and encryption-key custody.
-- [ ] Inventory Nexus database, configuration, and blob-store locations.
+- [x] Identify the Nexus deployment source and persistent-data model.
+- [ ] Verify Nexus runtime version, data usage, and application-consistent backup requirements.
 - [ ] Inventory Proxmox VMs and host configuration.
 - [x] Inventory Mac NFS capacity and top-level directory usage.
 - [x] Confirm no Jellyfin media requires backup.
