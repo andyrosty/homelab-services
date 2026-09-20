@@ -33,6 +33,27 @@ done
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 output_dir="${1:-${TMPDIR:-/tmp}/homelab-dr-inventory-${timestamp}}"
 
+current_context="$(kubectl config current-context 2>/dev/null || true)"
+if [[ -z "${current_context}" ]]; then
+  current_context="none"
+fi
+
+if ! kubectl cluster-info --request-timeout=5s >/dev/null 2>&1; then
+  cat >&2 <<ERROR
+Cannot reach a Kubernetes API server.
+
+Current context: ${current_context}
+
+Configure a valid kubeconfig or select the intended context, then verify:
+  kubectl config get-contexts
+  kubectl cluster-info
+  kubectl get nodes
+
+No inventory files were created.
+ERROR
+  exit 1
+fi
+
 mkdir -p -- "${output_dir}"
 chmod 700 "${output_dir}"
 
