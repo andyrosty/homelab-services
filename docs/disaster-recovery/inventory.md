@@ -111,7 +111,32 @@ belong in the encrypted private inventory.
 | Nexus | Database, configuration, and blob stores | Important | 24 hours | 24 hours | Application-aware backup plus VM backup | Runtime details pending |
 | Proxmox VMs | VM configuration and virtual disks | Important | 24 hours | 24 hours | Proxmox Backup Server | VM inventory pending |
 | Proxmox hosts | Cluster, network, and storage configuration | Critical | 24 hours | 8 hours | Encrypted host-configuration export | Host inventory pending |
-| Mac NFS host | NFS configuration and selected irreplaceable files | Important | Decision required | 72 hours | Kopia or approved ADR method | Filesystem inventory pending |
+| Mac NFS host | NFS configuration and selected irreplaceable files | Important | Decision required | 72 hours | Kopia or approved ADR method | Capacity and top-level usage verified 2026-09-20 |
+
+### Mac NFS runtime summary
+
+Verified locally on 2026-09-20:
+
+| Measurement | Reported value |
+|---|---:|
+| Filesystem capacity | 931 GiB |
+| Filesystem used | 152 GiB |
+| Filesystem available | 779 GiB |
+| Filesystem utilization | 17% |
+| Jellyfin media directory | 105 GB reported by `du` |
+| qBittorrent downloads directory | 117 GB reported by `du` |
+
+The two directory measurements must not be added together and treated as exact
+physical allocation without accounting for filesystem behavior such as clones,
+sparse files, snapshots, or block sharing. The filesystem-level `df` result is
+the authoritative physical-capacity view.
+
+Both NFS PVCs request 100 GiB, but their backing static PVs advertise 900 GiB
+and the directories can grow beyond the PVC request. The requested PVC size is
+therefore descriptive for these static NFS volumes, not an enforced quota.
+
+qBittorrent downloads remain classified as disposable. Jellyfin media remains
+`Bulk or replaceable` until its recovery requirement is confirmed.
 
 Private references:
 
@@ -162,7 +187,8 @@ Review all output manually. Do not commit files prefixed with
 - [ ] Inventory n8n storage, database type, and encryption-key custody.
 - [ ] Inventory Nexus database, configuration, and blob-store locations.
 - [ ] Inventory Proxmox VMs and host configuration.
-- [ ] Inventory Mac NFS capacity and identify irreplaceable directories.
+- [x] Inventory Mac NFS capacity and top-level directory usage.
+- [ ] Identify which Jellyfin media, if any, is irreplaceable.
 - [ ] Confirm all active Secret names and required key names without reading values.
 - [ ] Approve RPO and RTO targets through #81.
 - [ ] Reconcile this document with runtime findings before closing #82.
