@@ -8,13 +8,19 @@ usage() {
 Usage:
   collect-kubernetes-inventory.sh [output-directory]
 
-Collects persistent-volume metadata using read-only Kubernetes API operations.
+Collects persistent-volume metadata through the k3s control node over SSH.
+Cluster queries follow the same remote kubectl pattern as k3s-health-monitor:
 
-The default output directory is created under TMPDIR or /tmp. Files beginning
-with "private-runtime-" contain environment-specific bindings and must not be
-committed to the repository.
+  ssh "$K3S_CONTROL_HOST" sudo k3s kubectl
 
-This script never requests Kubernetes Secret objects or secret values.
+Set K3S_CONTROL_HOST to override the default control-node SSH target.
+
+The default output directory is created locally under TMPDIR or /tmp. Files
+beginning with "private-runtime-" contain environment-specific bindings and
+must not be committed to the repository.
+
+This script never copies files to the cluster and never requests Kubernetes
+Secret objects or secret values.
 USAGE
 }
 
@@ -23,9 +29,16 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   exit 0
 fi
 
-for command_name in kubectl jq; do
+K3S_CONTROL_HOST="${K3S_CONTROL_HOST:-andrew@192.168.50.147}"
+KUBECTL_CMD=(ssh "${K3S_CONTROL_HOST}" sudo k3s kubectl)
+
+k() {
+  "${KUBECTL_CMD[@]}" "$@"
+}
+
+for command_name in ssh jq; do
   if ! command -v "${command_name}" >/dev/null 2>&1; then
-    echo "Required command not found: ${command_name}" >&2
+    echo "Required local command not found: ${command_name}" >&2
     exit 1
   fi
 done
@@ -33,23 +46,17 @@ done
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 output_dir="${1:-${TMPDIR:-/tmp}/homelab-dr-inventory-${timestamp}}"
 
-current_context="$(kubectl config current-context 2>/dev/null || true)"
-if [[ -z "${current_context}" ]]; then
-  current_context="none"
-fi
-
-if ! kubectl cluster-info --request-timeout=5s >/dev/null 2>&1; then
+if ! k cluster-info --request-timeout=5s >/dev/null 2>&1; then
   cat >&2 <<ERROR
-Cannot reach a Kubernetes API server.
+Cannot reach the Kubernetes API through the configured control node.
 
-Current context: ${current_context}
+Control host: ${K3S_CONTROL_HOST}
 
-Configure a valid kubeconfig or select the intended context, then verify:
-  kubectl config get-contexts
-  kubectl cluster-info
-  kubectl get nodes
+Verify SSH and remote k3s access:
+  ssh "${K3S_CONTROL_HOST}" sudo k3s kubectl cluster-info
+  ssh "${K3S_CONTROL_HOST}" sudo k3s kubectl get nodes
 
-No inventory files were created.
+No inventory files were created locally, and nothing was written remotely.
 ERROR
   exit 1
 fi
@@ -58,7 +65,7 @@ mkdir -p -- "${output_dir}"
 chmod 700 "${output_dir}"
 
 for resource in persistentvolumeclaims persistentvolumes pods; do
-  if [[ "$(kubectl auth can-i list "${resource}" --all-namespaces)" != "yes" ]]; then
+  if [[ "$(k auth can-i list "${resource}" --all-namespaces)" != "yes" ]]; then
     echo "Current Kubernetes identity cannot list ${resource}." >&2
     exit 1
   fi
@@ -73,7 +80,7 @@ printf '%s\n'   "Review every generated file before use."   "Do not commit files
 
 printf 'namespace\tpvc\tstorage_class\trequested_capacity\taccess_modes\tstatus\n'   > "${public_pvc_file}"
 
-kubectl get persistentvolumeclaims --all-namespaces -o json |
+k get persistentvolumeclaims --all-namespaces -o json |
   jq -r '
     .items[]
     | [
@@ -89,7 +96,7 @@ kubectl get persistentvolumeclaims --all-namespaces -o json |
 
 printf 'pv\tclaim_namespace\tclaim_name\tstorage_class\tcapacity\treclaim_policy\tvolume_type\towner_nodes\n'   > "${private_pv_file}"
 
-kubectl get persistentvolumes -o json |
+k get persistentvolumes -o json |
   jq -r '
     .items[]
     | [
@@ -123,7 +130,7 @@ kubectl get persistentvolumes -o json |
 
 printf 'namespace\tpod\tnode\tpvc\n' > "${private_pod_file}"
 
-kubectl get pods --all-namespaces -o json |
+k get pods --all-namespaces -o json |
   jq -r '
     .items[] as $pod
     | $pod.spec.volumes[]?
@@ -152,6 +159,10 @@ Private runtime files; do not commit:
   ${private_pv_file}
   ${private_pod_file}
 
-The collector did not request Kubernetes Secret objects.
+Cluster queries ran remotely through:
+  ssh ${K3S_CONTROL_HOST} sudo k3s kubectl
+
+All inventory files were created locally. Nothing was copied to or written on
+the cluster. The collector did not request Kubernetes Secret objects.
 Review and sanitize all output before moving any information into Git.
 RESULT
