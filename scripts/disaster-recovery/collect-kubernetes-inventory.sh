@@ -78,7 +78,8 @@ warning_file="${output_dir}/DO_NOT_COMMIT_PRIVATE_RUNTIME_FILES.txt"
 
 printf '%s\n'   "Review every generated file before use."   "Do not commit files beginning with private-runtime-."   "These files contain node names and bound-volume identifiers."   "Move required details into the approved encrypted private inventory."   > "${warning_file}"
 
-printf 'namespace\tpvc\tstorage_class\trequested_capacity\taccess_modes\tstatus\n'   > "${public_pvc_file}"
+printf 'namespace\tpvc\tstorage_class\trequested_capacity\tbound_capacity\taccess_modes\tstatus\n' \
+  > "${public_pvc_file}"
 
 k get persistentvolumeclaims --all-namespaces -o json |
   jq -r '
@@ -88,6 +89,7 @@ k get persistentvolumeclaims --all-namespaces -o json |
         .metadata.name,
         (.spec.storageClassName // "unset"),
         (.spec.resources.requests.storage // "unknown"),
+        (.status.capacity.storage // "unknown"),
         ((.spec.accessModes // []) | join(",")),
         (.status.phase // "unknown")
       ]
