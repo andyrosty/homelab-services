@@ -37,23 +37,36 @@ replace them.
 ## Kubernetes persistent data
 
 The requested sizes and storage classes below come from the GitOps manifests.
-Runtime ownership, actual consumption, and bound-volume details remain pending
-until the collector is run against the cluster.
+Runtime PVC presence and binding status were verified against the production
+cluster on 2026-09-20. Node ownership and actual filesystem consumption remain
+in the encrypted private inventory workflow.
 
 | Workload | Namespace | Logical volume | Declared storage | Requested size | Class | Initial RPO | Initial RTO | Proposed protection | Runtime status |
 |---|---|---|---|---:|---|---:|---:|---|---|
-| Keycloak PostgreSQL | keycloak | keycloak-postgres-data | local-path | 10 GiB | Critical | 24 hours | 8 hours | Native PostgreSQL dump | Pending runtime verification |
-| Rocket.Chat MongoDB | rocketchat | data-volume template | local-path | 10 GiB | Critical | 24 hours | 8 hours | Native MongoDB dump | Pending runtime verification |
-| Jellyfin | jellyfin | jellyfin-config | local-path | 10 GiB | Important | 24 hours | 24 hours | Velero/Kopia configuration backup | Pending runtime verification |
-| Jellyfin | jellyfin | jellyfin-cache | local-path | 20 GiB | Disposable | None | Recreate | Excluded | Pending runtime verification |
-| Jellyfin | jellyfin | jellyfin-media | mac-nfs | 100 GiB requested | Bulk or replaceable | Decision required | 72 hours | Decision required in #81 | Pending runtime verification |
-| qBittorrent | qbittorrent | qbittorrent-config | local-path | 5 GiB | Important | 24 hours | 24 hours | Velero/Kopia configuration backup | Pending runtime verification |
-| qBittorrent | qbittorrent | qbittorrent-downloads | mac-nfs | 100 GiB requested | Disposable | None | Recreate | Excluded | Pending runtime verification |
-| Grafana | monitoring | chart-managed PVC | local-path | 2 GiB | Important | 24 hours | 24 hours | Velero/Kopia or Git provisioning | Pending runtime verification |
-| Prometheus | monitoring | chart-managed PVC | local-path | 5 GiB | Disposable | None | Recreate | Excluded | Pending runtime verification |
-| Alertmanager | monitoring | chart-managed PVC | local-path | 1 GiB | Disposable | None | Recreate | Excluded | Pending runtime verification |
-| Storage test | storage-test | storage-test-data | local-path | 1 GiB | Disposable | None | Recreate | Excluded | Pending runtime verification |
-| NFS storage test | nfs-storage-test | downloads-test-pvc | mac-nfs | 10 GiB | Disposable | None | Recreate | Excluded; workload is not enabled by default | Pending runtime verification |
+| Keycloak PostgreSQL | keycloak | keycloak-postgres-data | local-path | 10 GiB | Critical | 24 hours | 8 hours | Native PostgreSQL dump | Bound; verified 2026-09-20 |
+| Rocket.Chat MongoDB | rocketchat | data-volume-rocketchat-mongodb-0 | local-path | 10 GiB | Critical | 24 hours | 8 hours | Native MongoDB dump | Bound; verified 2026-09-20 |
+| Rocket.Chat MongoDB logs | rocketchat | logs-volume-rocketchat-mongodb-0 | local-path | 2 GB | Disposable | None | Recreate | Excluded | Bound; runtime-discovered 2026-09-20 |
+| Jellyfin | jellyfin | jellyfin-config | local-path | 10 GiB | Important | 24 hours | 24 hours | Velero/Kopia configuration backup | Bound; verified 2026-09-20 |
+| Jellyfin | jellyfin | jellyfin-cache | local-path | 20 GiB | Disposable | None | Recreate | Excluded | Bound; verified 2026-09-20 |
+| Jellyfin | jellyfin | jellyfin-media | mac-nfs | 100 GiB requested | Bulk or replaceable | Decision required | 72 hours | Decision required in #81 | Bound; verified 2026-09-20 |
+| qBittorrent | qbittorrent | qbittorrent-config | local-path | 5 GiB | Important | 24 hours | 24 hours | Velero/Kopia configuration backup | Bound; verified 2026-09-20 |
+| qBittorrent | qbittorrent | qbittorrent-downloads | mac-nfs | 100 GiB requested | Disposable | None | Recreate | Excluded | Bound; verified 2026-09-20 |
+| Grafana | monitoring | kube-prometheus-stack-grafana | local-path | 2 GiB | Important | 24 hours | 24 hours | Velero/Kopia or Git provisioning | Bound; verified 2026-09-20 |
+| Prometheus | monitoring | prometheus-kube-prometheus-stack-prometheus-db-prometheus-kube-prometheus-stack-prometheus-0 | local-path | 5 GiB | Disposable | None | Recreate | Excluded | Bound; verified 2026-09-20 |
+| Alertmanager | monitoring | alertmanager-kube-prometheus-stack-alertmanager-db-alertmanager-kube-prometheus-stack-alertmanager-0 | local-path | 1 GiB | Disposable | None | Recreate | Excluded | Bound; verified 2026-09-20 |
+| Storage test | storage-test | storage-test-data | local-path | 1 GiB | Disposable | None | Recreate | Excluded | Bound; verified 2026-09-20 |
+| NFS storage test | nfs-storage-test | downloads-test-pvc | mac-nfs | 10 GiB | Disposable | None | Recreate | Excluded; workload is not enabled by default | Not present; verified 2026-09-20 |
+
+### Verified runtime summary
+
+- Active PVCs: 12
+- Bound PVCs: 12
+- Node-local `local-path` PVCs: 10
+- Mac NFS PVCs: 2
+- Unbound PVCs: 0
+- Runtime-only finding: the MongoDB operator created
+  `logs-volume-rocketchat-mongodb-0`, which is classified as disposable.
+- The optional `nfs-storage-test` PVC is not deployed.
 
 ### Required private runtime fields
 
