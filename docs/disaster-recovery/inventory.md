@@ -107,11 +107,29 @@ belong in the encrypted private inventory.
 
 | Component | State requiring protection | Initial class | Initial RPO | Initial RTO | Proposed protection | Runtime status |
 |---|---|---|---:|---:|---|---|
-| n8n | Database, workflows, credentials, and encryption key | Critical | 24 hours | 8 hours | Application-aware backup plus VM backup | Runtime details pending |
+| n8n | Database, workflows, credentials, and encryption key | Disposable while empty | None | Recreate | Deferred until state exists | Fresh container with no material state; confirmed 2026-09-20 |
 | Nexus | Database, configuration, and blob stores | Important | Deferred | Deferred | Deferred to #83 | Excluded from #82 runtime collection |
 | Proxmox VMs | VM configuration and virtual disks | Important | 24 hours | 24 hours | Proxmox Backup Server | VM inventory pending |
 | Proxmox hosts | Cluster, network, and storage configuration | Critical | 24 hours | 8 hours | Encrypted host-configuration export | Host inventory pending |
 | Mac NFS host | NFS configuration and selected irreplaceable files | Important | Decision required | 72 hours | Kopia or approved ADR method | Capacity and top-level usage verified 2026-09-20 |
+
+### n8n scope decision
+
+n8n currently runs as a fresh container with no material workflows, credentials,
+or execution history. It is therefore treated as disposable and excluded from
+the current backup scope.
+
+Containerization does not make future n8n state disposable. Reclassify n8n as
+Critical before it receives production workflows or stored credentials. At that
+point the recovery set must include:
+
+- The n8n database or persistent data directory
+- The exact `N8N_ENCRYPTION_KEY`, stored outside the container
+- Docker Compose or equivalent deployment configuration
+- Any external database required by n8n
+
+Trigger: re-open the n8n inventory and backup work when the first non-test
+workflow or credential is added. Protection design remains tracked by #83.
 
 ### Nexus configuration summary
 
@@ -207,7 +225,7 @@ Review all output manually. Do not commit files prefixed with
 - [ ] Run the collector against production and staging.
 - [ ] Record node ownership and actual consumption in the encrypted private inventory.
 - [x] Confirm Jellyfin media is replaceable and excluded from backup.
-- [ ] Inventory n8n storage, database type, and encryption-key custody.
+- [x] Confirm n8n has no material state and defer protection until the first non-test workflow or credential is added.
 - [x] Identify the Nexus deployment source and persistent-data model.
 - [x] Defer Nexus runtime inventory and application-consistent backup design to #83.
 - [ ] Inventory Proxmox VMs and host configuration.
