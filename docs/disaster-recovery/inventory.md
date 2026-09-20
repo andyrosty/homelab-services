@@ -48,7 +48,7 @@ in the encrypted private inventory workflow.
 | Rocket.Chat MongoDB logs | rocketchat | logs-volume-rocketchat-mongodb-0 | local-path | 2 GB | Disposable | None | Recreate | Excluded | Bound; runtime-discovered 2026-09-20 |
 | Jellyfin | jellyfin | jellyfin-config | local-path | 10 GiB | Important | 24 hours | 24 hours | Velero/Kopia configuration backup | Bound; verified 2026-09-20 |
 | Jellyfin | jellyfin | jellyfin-cache | local-path | 20 GiB | Disposable | None | Recreate | Excluded | Bound; verified 2026-09-20 |
-| Jellyfin | jellyfin | jellyfin-media | mac-nfs | 100 GiB requested | Bulk or replaceable | Decision required | 72 hours | Decision required in #81 | Bound; verified 2026-09-20 |
+| Jellyfin | jellyfin | jellyfin-media | mac-nfs | 100 GiB requested | Bulk or replaceable | None | 72 hours | Excluded; reacquire media | Bound; verified 2026-09-20 |
 | qBittorrent | qbittorrent | qbittorrent-config | local-path | 5 GiB | Important | 24 hours | 24 hours | Velero/Kopia configuration backup | Bound; verified 2026-09-20 |
 | qBittorrent | qbittorrent | qbittorrent-downloads | mac-nfs | 100 GiB requested | Disposable | None | Recreate | Excluded | Bound; verified 2026-09-20 |
 | Grafana | monitoring | kube-prometheus-stack-grafana | local-path | 2 GiB | Important | 24 hours | 24 hours | Velero/Kopia or Git provisioning | Bound; verified 2026-09-20 |
@@ -135,8 +135,9 @@ Both NFS PVCs request 100 GiB, but their backing static PVs advertise 900 GiB
 and the directories can grow beyond the PVC request. The requested PVC size is
 therefore descriptive for these static NFS volumes, not an enforced quota.
 
-qBittorrent downloads remain classified as disposable. Jellyfin media remains
-`Bulk or replaceable` until its recovery requirement is confirmed.
+qBittorrent downloads remain classified as disposable. Jellyfin media is
+classified as replaceable and excluded from backup. Jellyfin application
+configuration remains important and must still be protected.
 
 Private references:
 
@@ -183,12 +184,12 @@ Review all output manually. Do not commit files prefixed with
 
 - [ ] Run the collector against production and staging.
 - [ ] Record node ownership and actual consumption in the encrypted private inventory.
-- [ ] Confirm whether Jellyfin media is irreplaceable or reacquirable.
+- [x] Confirm Jellyfin media is replaceable and excluded from backup.
 - [ ] Inventory n8n storage, database type, and encryption-key custody.
 - [ ] Inventory Nexus database, configuration, and blob-store locations.
 - [ ] Inventory Proxmox VMs and host configuration.
 - [x] Inventory Mac NFS capacity and top-level directory usage.
-- [ ] Identify which Jellyfin media, if any, is irreplaceable.
+- [x] Confirm no Jellyfin media requires backup.
 - [ ] Confirm all active Secret names and required key names without reading values.
 - [ ] Approve RPO and RTO targets through #81.
 - [ ] Reconcile this document with runtime findings before closing #82.
