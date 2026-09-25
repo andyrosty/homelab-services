@@ -26,6 +26,8 @@ spec:
 
     env:
       HOMEPAGE_ALLOWED_HOSTS: homepage.dev-andrew.com
+      # Homepage substitutes HOMEPAGE_VAR_* placeholders in its config files.
+      HOMEPAGE_VAR_BASE_DOMAIN: dev-andrew.com
 
     service:
       main:
@@ -122,10 +124,10 @@ spec:
       services:
         - Infrastructure:
             - Homepage:
-                href: https://homepage.dev-andrew.com
+                href: https://homepage.{{HOMEPAGE_VAR_BASE_DOMAIN}}
                 description: Homelab dashboard
                 icon: homepage.png
-                siteMonitor: https://homepage.dev-andrew.com
+                siteMonitor: https://homepage.{{HOMEPAGE_VAR_BASE_DOMAIN}}
                 namespace: homepage
                 podSelector: app.kubernetes.io/instance=homepage
             - Proxmox:
@@ -140,40 +142,40 @@ spec:
                 siteMonitor: https://192.168.50.1
         - Monitoring:
             - Grafana:
-                href: http://grafana.dev-andrew.com
+                href: http://grafana.{{HOMEPAGE_VAR_BASE_DOMAIN}}
                 description: Kubernetes monitoring dashboard
                 icon: grafana.png
-                siteMonitor: http://grafana.dev-andrew.com
+                siteMonitor: http://grafana.{{HOMEPAGE_VAR_BASE_DOMAIN}}
                 namespace: monitoring
                 podSelector: app.kubernetes.io/name=grafana
         - Media:
             - Jellyfin:
-                href: https://jellyfin.dev-andrew.com
+                href: https://jellyfin.{{HOMEPAGE_VAR_BASE_DOMAIN}}
                 description: Media server
                 icon: jellyfin.png
-                siteMonitor: https://jellyfin.dev-andrew.com
+                siteMonitor: https://jellyfin.{{HOMEPAGE_VAR_BASE_DOMAIN}}
                 namespace: jellyfin
                 podSelector: app=jellyfin
             - qBittorrent:
-                href: https://qbittorrent.dev-andrew.com
+                href: https://qbittorrent.{{HOMEPAGE_VAR_BASE_DOMAIN}}
                 description: Torrent client
                 icon: qbittorrent.png
-                siteMonitor: https://qbittorrent.dev-andrew.com
+                siteMonitor: https://qbittorrent.{{HOMEPAGE_VAR_BASE_DOMAIN}}
                 namespace: qbittorrent
                 podSelector: app=qbittorrent
         - Applications:
             - Keycloak:
-                href: https://keycloak.dev-andrew.com
+                href: https://keycloak.{{HOMEPAGE_VAR_BASE_DOMAIN}}
                 description: Identity provider
                 icon: keycloak.png
-                siteMonitor: https://keycloak.dev-andrew.com
+                siteMonitor: https://keycloak.{{HOMEPAGE_VAR_BASE_DOMAIN}}
                 namespace: keycloak
                 podSelector: app=keycloak
             - Rocket.Chat:
-                href: https://rocketchat.dev-andrew.com
+                href: https://rocketchat.{{HOMEPAGE_VAR_BASE_DOMAIN}}
                 description: Team chat
                 icon: rocket-chat.png
-                siteMonitor: https://rocketchat.dev-andrew.com
+                siteMonitor: https://rocketchat.{{HOMEPAGE_VAR_BASE_DOMAIN}}
                 namespace: rocketchat
                 podSelector: app.kubernetes.io/instance=rocketchat
         - Background Services:
