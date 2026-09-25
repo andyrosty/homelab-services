@@ -109,8 +109,8 @@ belong in the encrypted private inventory.
 |---|---|---|---:|---:|---|---|
 | n8n | Database, workflows, credentials, and encryption key | Disposable while empty | None | Recreate | Deferred until state exists | Fresh container with no material state; confirmed 2026-09-20 |
 | Nexus | Database, configuration, and blob stores | Important | Deferred | Deferred | Deferred to #83 | Excluded from #82 runtime collection |
-| Proxmox VMs | VM configuration and virtual disks | Important | 24 hours | 24 hours | Proxmox Backup Server | VM inventory pending |
-| Proxmox hosts | Cluster, network, and storage configuration | Critical | 24 hours | 8 hours | Encrypted host-configuration export | Host inventory pending |
+| Proxmox VMs | VM configuration and virtual disks | Important | 24 hours | 24 hours | Proxmox Backup Server | Collector ready; runtime inventory pending |
+| Proxmox hosts | Cluster, network, and storage configuration | Critical | 24 hours | 8 hours | Encrypted host-configuration export | Collector ready; runtime inventory pending |
 | Mac NFS host | NFS configuration and selected irreplaceable files | Important | Decision required | 72 hours | Kopia or approved ADR method | Capacity and top-level usage verified 2026-09-20 |
 
 ### n8n scope decision
@@ -187,8 +187,10 @@ Private references:
 
 ## Runtime collection
 
-Run the collector from the Mac or another administrative workstation that has
-SSH access to the k3s control node:
+### Kubernetes
+
+Run the Kubernetes collector from the Mac or another administrative workstation
+that has SSH access to the k3s control node:
 
 ```bash
 bash scripts/disaster-recovery/collect-kubernetes-inventory.sh
@@ -219,6 +221,58 @@ The collector:
 
 Review all output manually. Do not commit files prefixed with
 `private-runtime-`.
+
+### Proxmox
+
+The Proxmox collector runs locally and uses HTTPS API `GET` requests only. Use a
+dedicated privilege-separated token whose user and token are both assigned the
+built-in `PVEAuditor` role. Do not use a root token.
+
+Required values:
+
+- `PROXMOX_API_URL`: trusted HTTPS endpoint, including port `8006`
+- `PROXMOX_TOKEN_ID`: full token ID, such as
+  `dr-inventory@pve!collector`
+- `PROXMOX_TOKEN_SECRET`: prompted for interactively by default
+- `PROXMOX_CACERT`: optional local CA certificate for privately issued TLS
+
+Run from the repository root:
+
+```bash
+export PROXMOX_API_URL="https://proxmox.example:8006"
+export PROXMOX_TOKEN_ID="dr-inventory@pve!collector"
+
+bash scripts/disaster-recovery/collect-proxmox-inventory.sh
+```
+
+The prompt keeps the token secret out of shell history. The script also supplies
+the authorization header to `curl` through standard input, so the secret is not
+placed in the process command line. Do not store the secret in an unencrypted
+`.env` file.
+
+If the API certificate is signed by a private CA:
+
+```bash
+export PROXMOX_CACERT="/local/path/to/proxmox-ca.pem"
+bash scripts/disaster-recovery/collect-proxmox-inventory.sh
+```
+
+The collector intentionally has no insecure TLS option. Fix certificate trust
+instead of bypassing verification.
+
+Repository-safe output contains aggregate version, node, guest, storage, and
+backup-job counts. The following remain private:
+
+- Cluster and node identifiers
+- VM and container names and IDs
+- Storage names and node mappings
+- Backup storage, schedules, and guest-selection rules
+- Resource allocation and utilization by guest or node
+
+All output is created locally with restrictive permissions. Nothing is copied to
+or written on Proxmox. If the Proxmox servers are independent, run the collector
+once against each server and use separate output directories. For a Proxmox
+cluster, one reachable cluster endpoint is sufficient.
 
 ## Open decisions and gaps
 
