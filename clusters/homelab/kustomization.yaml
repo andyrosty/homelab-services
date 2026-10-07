@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - flux-system
+  - ../../infrastructure/flux-operator
   - ../../infrastructure/metallb
   - ../../infrastructure/monitoring
   - ../../infrastructure/nginx-ingress
